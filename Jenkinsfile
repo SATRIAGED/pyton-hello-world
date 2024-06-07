@@ -1,34 +1,37 @@
+def appName = 'ms-hello-world'
+def namespace = 'web'
+
+
 pipeline {
-    agent any
-    
-    environment {
-        DOCKER_HUB_REPO = "shivammitra/flask-hello-world"
-        CONTAINER_NAME = "flask-hello-world"
-    }
-    
-    stages {
-        /* We do not need a stage for checkout here since it is done by default when using "Pipeline script from SCM" option. */
-        
-        stage('Build') {
-            steps {
-                echo 'Building..'
-                sh 'docker image build -t $DOCKER_HUB_REPO:latest .'
-            }
-        }
-        stage('Test') {
-            steps {
-                echo 'Testing..'
-                sh 'docker stop $CONTAINER_NAME || true'
-                sh 'docker rm $CONTAINER_NAME || true'
-                sh 'docker run --name $CONTAINER_NAME $DOCKER_HUB_REPO /bin/bash -c "pytest test.py && flake8"'
-            }
-        }
-        stage('Deploy') {
-            steps {
-                echo 'Deploying....'
-                sh 'kubectl apply -f deployment.yaml'
-                sh 'kuebctl apply -f service.yaml'
-            }
-        }
-    }
-}
+
+agent any
+ stages {
+     stage("Checkout code") {
+         steps {
+             checkout scm
+         }
+     }
+     stage("Build image") {
+         steps {
+             script {
+                 dockerImage = docker.build('varunmanik/httpd:v1-blue')
+             }
+         }
+     }
+ stage("Deploy Kubernetes") {
+
+     steps {
+                 script {
+     withKubeConfig([credentialsId: 'kubeconfig']) 
+         {
+       sh "kubectl apply -f deployment.yml --validate=false"
+       sh "kubectl apply -f service.yml"
+       }                
+     }
+       //kubernetesDeploy(configs: "deployment.yml", "service.yml")
+       }                
+     }
+
+   }
+ }
+

@@ -1,6 +1,15 @@
-FROM python:3.6
-MAINTAINER Shivam Mitra "shivamm389@gmail.com" # Change the name and email address
-COPY app.py test.py /app/
-WORKDIR /app
-RUN pip install flask pytest flake8 # This downloads all the dependencies
-CMD ["python", "app.py"]
+# Use Ubuntu as a base image
+FROM ubuntu:22.04
+
+# Update and install nginx
+RUN apt-get update 
+
+RUN apt-get install -y nginx
+
+# Copy the custom index file to the nginx directory
+COPY index.html /var/www/html
+
+EXPOSE 80
+
+# Start nginx in the foreground to keep the container running
+CMD ["nginx", "-g", "daemon off;"]
